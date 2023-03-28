@@ -156,31 +156,31 @@ ImVec4 Wordle_getcol_by_value_in_array(int index)
     switch (wordle_button_state[index])
     {
         case 0:
-            return ImVec4(0.07058f, 0.07058f, 0.07450f, 1.0f); //0 = not guessed, dark grey
+            return ImVec4(0.07058f, 0.07058f, 0.07450f, 1.0f);
         case 1:
-            return ImVec4(0.22745f, 0.22745f, 0.23529f, 1.0f); //1 = guessed, letter doesnt exist, brighter grey
+            return ImVec4(0.22745f, 0.22745f, 0.23529f, 1.0f);
         case 2:
-            return ImVec4(0.70980f, 0.62352f, 0.23137f, 1.0f); //2 = guessed, letter exists but wrong position, yellow
+            return ImVec4(0.70980f, 0.62352f, 0.23137f, 1.0f);
         case 3:
-            return ImVec4(0.32549f, 0.55294f, 0.30588f, 1.0f); //3 = guessed, letter exists and in right pos, green
+            return ImVec4(0.32549f, 0.55294f, 0.30588f, 1.0f);
         default: 
-            return ImVec4(0.07058f, 0.07058f, 0.07450f, 1.0f); //default = not guessed, dark grey
+            return ImVec4(0.07058f, 0.07058f, 0.07450f, 1.0f);
     }
 }
 
 void wordle_anim_single_item(int index)
 {
-    static float idk_btn_size_list[] = {27, 23, 19, 15, 11, 7, 3};
-    for(int i = 0; i < 7; i++)
+    static float idk_btn_size_list[] = {27.0f, 24.5f, 22.0f, 19.5f, 17.0f, 14.5f, 12.0f, 9.5f, 7.0f, 4.5f, 0.05f};
+    for(int i = 0; i < IM_ARRAYSIZE(idk_btn_size_list); i++)
     {
         wordle_button_height[index] = idk_btn_size_list[i];
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(7));
     }
 
-    for (int i = 6; i >= 0; i--)
+    for (int i = IM_ARRAYSIZE(idk_btn_size_list) - 1; i >= 0; i--)
     {
         wordle_button_height[index] = idk_btn_size_list[i];
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(7));
     }
     wordle_button_height[index] = 27;
 }
@@ -369,7 +369,6 @@ void wordle_newgame()
     wordle_keyinput_enabled = true;
 }
 
-
 ImVec2 wordle_btn_size = ImVec2(27,27);
 void wordle_main()
 {
@@ -391,10 +390,8 @@ void wordle_main()
 
     for (int y = 0; y < 6; y++)
     {
-        // Add horizontal spacing to the left of each row of buttons
         ImGui::Dummy(ImVec2(wordle_indent_width[y], 27.0f));
     
-        // Start drawing buttons in this row
         ImGui::SameLine();
         for (int x = 0; x < 5; x++)
         { 
@@ -405,7 +402,6 @@ void wordle_main()
             ImGui::PushStyleColor(ImGuiCol_Button, Wordle_getcol_by_value_in_array(index));
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
 
-            // Set the button's Y position to center-align it within its allocated space
             float button_height = wordle_button_height[index];
             float button_space = (ImGui::GetContentRegionAvail().y - 5 * ImGui::GetStyle().ItemSpacing.y) / 120.0f;
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (button_space - button_height) / 2.0f);
@@ -423,13 +419,13 @@ void wordle_main()
     ImGui::PopStyleVar();
 
     ImGuiIO& io = ImGui::GetIO();
-
     ImGui::BeginDisabled(is_during_game);
     if(ImGui::Button("New Game"))
     {
         wordle_newgame();
     }
     ImGui::SameLine();
+
     if(ImGui::Button("Copy Results"))
         {
             std::string emojis = "";
