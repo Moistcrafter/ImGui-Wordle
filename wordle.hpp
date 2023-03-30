@@ -165,7 +165,7 @@ ImVec4 Wordle_getcol_by_value_in_array(int index)
     }
 }
 
-void wordle_anim_single_item(int index)
+void wordle_anim_single_item(int index, int setcol)
 {
     static float idk_btn_size_list[] = {27.0f, 24.5f, 22.0f, 19.5f, 17.0f, 14.5f, 12.0f, 9.5f, 7.0f, 4.5f, 0.01f};
     for(int i = 0; i < IM_ARRAYSIZE(idk_btn_size_list); i++)
@@ -173,7 +173,7 @@ void wordle_anim_single_item(int index)
         wordle_button_height[index] = idk_btn_size_list[i];
         std::this_thread::sleep_for(std::chrono::milliseconds(7));
     }
-
+    wordle_button_state[index] = setcol;
     for (int i = IM_ARRAYSIZE(idk_btn_size_list) - 1; i >= 0; i--)
     {
         wordle_button_height[index] = idk_btn_size_list[i];
@@ -182,47 +182,30 @@ void wordle_anim_single_item(int index)
     wordle_button_height[index] = 27;
 }
 
-void wordle_animate_row(int row, bool clear, const char* setcol, bool updategame = false)
+void wordle_animate_row(int row, bool clear, std::string setcol, bool updategame = false)
 {
     wordle_keyinput_enabled = false;
     for (int i = 0; i < 5; i++)
     {
         const int item_idx = row * 5 + i;
        
-        std::thread wordle_anim2_thr(wordle_anim_single_item, item_idx);
+        std::thread wordle_anim2_thr(wordle_anim_single_item, item_idx, setcol[i] - '0');
         wordle_anim2_thr.detach();
         std::this_thread::sleep_for(std::chrono::milliseconds(120));
-
-int length = static_cast<int>(std::strlen(setcol));
-
-        int* col_set = new int[length];
-
-        for (int j = 0; j < length; j++)
-        {
-            col_set[j] = setcol[j] - '0'; // convert char to int
-        }
-
-        wordle_button_state[item_idx] = col_set[i];
-
         if (clear){
             wordle_display_letter[item_idx] = " ";
         }
-
-
-        delete[] col_set; // free memory allocated with new
     }
                
     if (updategame)
     {
-        printf("%s", setcol);
         std::string colorset = std::string(setcol);
         if (curr_row_index != 5)
         {
-            if(setcol == std::string("33333"))
+            if(setcol =="33333")
             {
-                wordle_game_end_state = 2; //Game End state: 1 lose, 2 = win
-                wordle_try_end_game_popup = true;
-                
+                wordle_game_end_state = 2; 
+                wordle_try_end_game_popup = true; 
             }
             else
             {
@@ -231,9 +214,9 @@ int length = static_cast<int>(std::strlen(setcol));
         }
         else 
         {
-            if(setcol == std::string("33333"))
+            if(setcol == "33333")
             {
-                wordle_game_end_state = 2; //Game End state: 1 lose, 2 = win
+                wordle_game_end_state = 2;
                 wordle_try_end_game_popup = true;
             }
             else
@@ -246,76 +229,51 @@ int length = static_cast<int>(std::strlen(setcol));
     wordle_keyinput_enabled = true;
 }
 
-void wordle_validate_row(int row, const char* target_word, const char* guess)
+std::array<std::string, 5> wordle_guess(const std::string& word, const std::string& latestWord) {
+    std::array<std::string, 5> result = { "1", "1", "1", "1", "1" };
+    std::string characters = word;
+
+    for (int i = 0; i < 5; ++i) {
+        if (characters[i] == latestWord[i]) {
+            result[i] = "3";
+            characters[i] = '$';
+        }
+    }
+
+    for (int i = 0; i < 5; ++i) {
+        int pos = -1;
+        for (int j = 0; j < 5; ++j) {
+            if (characters[j] == latestWord[i]) {
+                pos = j;
+                break;
+            }
+        }
+
+        if (result[i] != "3" && pos >= 0) {
+            characters[pos] = '$';
+            result[pos] = "2";
+        }
+    }
+
+    return result;
+}
+void wordle_validate_row(int row, const char* guess_str)
+
 {
-    const int LENGTH = 5;
-    int result[LENGTH] = {0};
-    char* lowercase_guess = new char[LENGTH + 1];
+    std::string guess = wordle_getword_in_row(curr_row_index);
+    std::transform(guess.begin(), guess.end(), guess.begin(), [](unsigned char c){ return std::tolower(c); });
 
-    // Convert guess to lowercase
-    for (int i = 0; i < LENGTH; i++)
-    {
-        lowercase_guess[i] = std::tolower(guess[i]);
-    }
-    lowercase_guess[LENGTH] = '\0'; // Add null terminator
+    std::string keyword = wordle_word;
+    std::transform(keyword.begin(), keyword.end(), keyword.begin(), [](unsigned char c){ return std::tolower(c); });
 
-    // Compare target_word and lowercase_guess
-    for (int i = 0; i < LENGTH; i++)
-    {
-        if (target_word[i] == lowercase_guess[i])
-        {
-            result[i] = 3; // Correct letter in correct position
-        }
-        else
-        {
-            bool letter_exists = false;
-            for (int j = 0; j < LENGTH; j++)
-            {
-                if (target_word[j] == lowercase_guess[i])
-                {
-                    if (j != i && result[j] != 3)
-                    {
-                        letter_exists = true;
-                        break;
-                    }
-                    else if (j == i && result[j] == 0)
-                    {
-                        result[i] = 3;
-                        letter_exists = true;
-                        break;
-                    }
-                    else if (result[j] == 1)
-                    {
-                        letter_exists = true;
-                        break;
-                    }
-                }
-            }
-            if (letter_exists)
-            {
-                result[i] = 2; // Letter exists but in wrong position
-            }
-            else
-            {
-                result[i] = 1; // Letter does not exist
-            }
-        }
+    std::string combined = "";
+    std::array<std::string, 5> result = wordle_guess(guess, keyword);
+
+    for (int i = 0; i < 5; ++i) {
+        combined += result[i];
     }
 
-    // Convert result to string
-    char* result_str = new char[LENGTH + 1];
-    for (int i = 0; i < LENGTH; i++)
-    {
-        result_str[i] = '0' + result[i]; // Convert int to char
-    }
-    result_str[LENGTH] = '\0'; // Add null terminator
-
-    // Clean up
-    delete[] lowercase_guess;
-
-    //return result_str;
-
-    std::thread wordle_anim_thr(wordle_animate_row, row, false, result_str, true);
+    std::thread wordle_anim_thr(wordle_animate_row, row, false, combined, true);
     wordle_anim_thr.detach();
 }
 
@@ -341,7 +299,7 @@ void wordle_handle_enter()
                 wordle_newword();
             }
             
-            wordle_validate_row(curr_row_index, wordle_word, wordle_getword_in_row(curr_row_index));
+            wordle_validate_row(curr_row_index, wordle_getword_in_row(curr_row_index));
         }
         else
         {
@@ -463,10 +421,23 @@ void wordle_main()
             wordle_allow_enter = true;
             enter_cooldown_timer = 0.0f;
         }
-        
+    }
+    
+/* --debug buttons--
+    if(ImGui::Button("Call validate word"))
+    {
+        wordle_validate_row(curr_row_index, wordle_getword_in_row(curr_row_index));
     }
 
-    if(ImGui::BeginPopupModal("Wordle", nullptr, ImGuiWindowFlags_AlwaysAutoResize ))
+    if(ImGui::Button("Set word"))
+    {
+        wordle_word = wordle_getword_in_row(curr_row_index);
+    }
+
+    ImGui::Text(wordle_word); 
+*/
+
+    if(ImGui::BeginPopupModal("Wordle", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         wordle_keyinput_enabled = false;
         ImGui::SetWindowFontScale(1.5f);
@@ -536,60 +507,33 @@ void wordle_main()
             }
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_A))
-        wordle_insert_letter("A",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_B))
-        wordle_insert_letter("B",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_C))
-        wordle_insert_letter("C",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_D))
-        wordle_insert_letter("D",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_E))
-        wordle_insert_letter("E",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_F))
-        wordle_insert_letter("F",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_G))
-        wordle_insert_letter("G",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_H))
-        wordle_insert_letter("H",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_I))
-        wordle_insert_letter("I",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_J))
-        wordle_insert_letter("J",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_K))
-        wordle_insert_letter("K",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_L))
-        wordle_insert_letter("L",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_M))
-        wordle_insert_letter("M",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_N))
-        wordle_insert_letter("N",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_O))
-        wordle_insert_letter("O",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_P))
-        wordle_insert_letter("P",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_Q))
-        wordle_insert_letter("Q",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_R))
-        wordle_insert_letter("R",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_S))
-        wordle_insert_letter("S",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_T))
-        wordle_insert_letter("T",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_U))
-        wordle_insert_letter("U",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_V))
-        wordle_insert_letter("V",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_W))
-        wordle_insert_letter("W",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_X))
-        wordle_insert_letter("X",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_Y))
-        wordle_insert_letter("Y",curr_row_index);
-        if (ImGui::IsKeyPressed(ImGuiKey_Z))
-        wordle_insert_letter("Z",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_A)) wordle_insert_letter("A",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_B)) wordle_insert_letter("B",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_C)) wordle_insert_letter("C",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_D)) wordle_insert_letter("D",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_E)) wordle_insert_letter("E",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_F)) wordle_insert_letter("F",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_G)) wordle_insert_letter("G",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_H)) wordle_insert_letter("H",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_I)) wordle_insert_letter("I",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_J)) wordle_insert_letter("J",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_K)) wordle_insert_letter("K",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_L)) wordle_insert_letter("L",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_M)) wordle_insert_letter("M",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_N)) wordle_insert_letter("N",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_O)) wordle_insert_letter("O",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_P)) wordle_insert_letter("P",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_Q)) wordle_insert_letter("Q",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_R)) wordle_insert_letter("R",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_S)) wordle_insert_letter("S",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_T)) wordle_insert_letter("T",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_U)) wordle_insert_letter("U",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_V)) wordle_insert_letter("V",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_W)) wordle_insert_letter("W",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_X)) wordle_insert_letter("X",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_Y)) wordle_insert_letter("Y",curr_row_index);
+        if (ImGui::IsKeyPressed(ImGuiKey_Z)) wordle_insert_letter("Z",curr_row_index);
+
     }
     
 }
-
-
