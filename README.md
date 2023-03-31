@@ -6,10 +6,10 @@ In your application with the Dear ImGui library, include the code and call wordl
 
 #Todo
 
-[x] Shaking animation
-[x] Letter flip animation
-[x] Working word check algorithm
-[x] New game option
+- [x] Shaking animation
+- [x] Letter flip animation
+- [x] Working word check algorithm
+- [x] New game option
 
-[ ] Hard mode (new guesses must include previously used letters that are in the target word)
-[ ] Windowed mode
+- [ ] Hard mode (new guesses must include previously used letters that are in the target word)
+- [ ] Windowed mode
