@@ -1,10 +1,10 @@
 # ImGui-Wordle
 Re-implementation of the word game Wordle with the Dear ImGui Library.
 
-#Usage:
+# Usage:
 In your application with the Dear ImGui library, include the code and call wordle_main in your ImGui main loop.
 
-#Todo
+# Todo
 
 - [x] Shaking animation
 - [x] Letter flip animation
