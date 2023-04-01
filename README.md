@@ -12,4 +12,3 @@ In your application with the Dear ImGui library, include the code and call wordl
 - [x] New game option
 
 - [ ] Hard mode (new guesses must include previously used letters that are in the target word)
-- [ ] Windowed mode
