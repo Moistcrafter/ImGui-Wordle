@@ -151,7 +151,7 @@ void wordle_shake_row(int row) {
         std::this_thread::sleep_for(std::chrono::milliseconds(15));
     }
     wordle_indent_width[curr_row_index] = 15.0f;
-}
+}//todo add dynamic indenting 
 
 bool wordle_search_lib(const char* word, const char* words[], int size) {
     std::unordered_set<std::string> word_set;
@@ -196,7 +196,7 @@ void wordle_anim_single_item(int index, int setcol, bool clear) {
         std::this_thread::sleep_for(std::chrono::milliseconds(9));
     }
     wordle_button_height[index] = 27;
-}
+}//todo multiply array by window scar
 
 void wordle_animate_row(int row, bool clear, std::string setcol, bool updategame = false)
 {
